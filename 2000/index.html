@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background-color: #c0c0c0; /* Popular gray background */
+            font-family: Verdana, Geneva, sans-serif; /* Early 2000s common fonts */
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 800px;
+            background-color: white;
+        }
+
+        td {
+            padding: 10px;
+        }
+
+        canvas {
+            border: 2px solid #000000;
+            background-color: white;
+        }
+
+        .toolbar {
+            margin-bottom: 10px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #000;
+            background-color: #d3d3d3; /* Dull gray look */
+            color: black;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: black;
+            background-color: #808080;
+            padding: 5px;
+            font-weight: bold;
+            border-bottom: 2px solid #000;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #333;
+        }
+        
+        select {
+            font-size: 14px;
+            padding: 5px;
+            border: 1px solid #000;
+        }
+
+        input[type="color"] {
+            margin-left: 10px;
+        }
+    </style>
+    <title>Stupid Paint Websit</title>
+</head>
+<body>
+    <table>
+        <tr>
+            <td colspan="3">
+                <h1>Stupid Paint Websit</h1>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3" class="toolbar">
+                <button id="brushSizeSmall">Small Brush</button>
+                <button id="brushSizeMedium">Medium Brush</button>
+                <button id="brushSizeLarge">Large Brush</button>
+                <select id="brushShape">
+                    <option value="round">Round Brush</option>
+                    <option value="square">Square Brush</option>
+                    <option value="triangle">Triangle Brush</option>
+                </select>
+                <input type="color" id="brushColor">
+                <button id="fillTool" style="display:none;">Fill Tool</button>
+                <button id="exportImage">Export Image</button>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <canvas id="paintCanvas" width="800" height="600"></canvas>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <a href="https://tdrbot.github.io/tdrp-tools">
+                    <button>Go Back</button>
+                </a>
+            </td>
+        </tr>
+    </table>
+    
+    <footer>
+        <p> © 2024 | Created by TDRP</p>
+    </footer>
+
+    <script>
+      // Get the canvas element and its context
+      const canvas = document.getElementById('paintCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // Set initial brush size, shape, and color
+      let brushSize = 5;
+      let brushShape = 'round';
+      let brushColor = '#000000';
+
+      // Set initial fill tool state
+      let fillToolActive = false;
+
+      // Function to draw on the canvas
+      function draw(e) {
+        if (e.buttons !== 1) return; // Only draw when left mouse button is pressed
+
+        ctx.beginPath();
+        ctx.fillStyle = brushColor;
+
+        if (brushShape === 'round') {
+          ctx.arc(e.offsetX, e.offsetY, brushSize / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (brushShape === 'square') {
+          ctx.fillRect(e.offsetX - brushSize / 2, e.offsetY - brushSize / 2, brushSize, brushSize);
+        } else if (brushShape === 'triangle') {
+          const height = Math.sqrt(3) * (brushSize / 2);
+          const halfBase = brushSize / 2;
+          ctx.moveTo(e.offsetX - halfBase, e.offsetY + height / 3);
+          ctx.lineTo(e.offsetX + halfBase, e.offsetY + height / 3);
+          ctx.lineTo(e.offsetX, e.offsetY - (height * 2) / 3);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        if (fillToolActive) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          const targetColorRgba = hexToRgba(brushColor);
+
+          floodFill(data, e.offsetX, e.offsetY, targetColorRgba);
+
+          ctx.putImageData(imageData, 0, 0);
+        }
+      }
+
+      // Function to perform flood fill
+      function floodFill(data, x, y, targetColor) {
+        const stack = [];
+        const startColor = getPixelColor(data, x, y);
+
+        if (startColor === targetColor) return;
+
+        stack.push([x, y]);
+
+        while (stack.length > 0) {
+          const [currentX, currentY] = stack.pop();
+
+          if (currentX < 0 || currentX >= canvas.width || currentY < 0 || currentY >= canvas.height) continue;
+
+          const pixelIndex = (currentY * canvas.width + currentX) * 4;
+          const pixelColor = getPixelColor(data, currentX, currentY);
+
+          if (pixelColor !== startColor) continue;
+
+          setPixelColor(data, currentX, currentY, targetColor);
+
+          stack.push([currentX - 1, currentY]);
+          stack.push([currentX + 1, currentY]);
+          stack.push([currentX, currentY - 1]);
+          stack.push([currentX, currentY + 1]);
+        }
+      }
+
+      // Helper function to get the color of a pixel
+      function getPixelColor(data, x, y) {
+        const pixelIndex = (y * canvas.width + x) * 4;
+        return rgbaToHex(data[pixelIndex], data[pixelIndex + 1], data[pixelIndex + 2], data[pixelIndex + 3]);
+      }
+
+      // Helper function to set the color of a pixel
+      function setPixelColor(data, x, y, color) {
+        const pixelIndex = (y * canvas.width + x) * 4;
+        const { r: redValue, g: greenValue , b: blueValue , a: alphaValue } = hexToRgba(color);
+        data[pixelIndex] = redValue;
+        data[pixelIndex + 1] = greenValue;
+        data[pixelIndex + 2] = blueValue;
+        data[pixelIndex + 3] = alphaValue;
+      }
+
+      // Helper function to convert hex color to rgba
+      function hexToRgba(hex) {
+        const bigint = parseInt(hex.substring(1), 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return { r, g, b, a: 255 };
+      }
+
+      // Helper function to convert rgba color to hex
+      function rgbaToHex(r, g, b, a) {
+        return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}${Math.round(a / 255 * 100).toString(16).padStart(2, '0')}`;
+      }
+
+      // Event listeners for brush size buttons
+      document.getElementById('brushSizeSmall').addEventListener('click', () => {
+        brushSize = 5;
+      });
+
+      document.getElementById('brushSizeMedium').addEventListener('click', () => {
+        brushSize = 10;
+      });
+
+      document.getElementById('brushSizeLarge').addEventListener('click', () => {
+        brushSize = 15;
+      });
+
+      // Event listener for brush shape selection
+      document.getElementById('brushShape').addEventListener('change', (e) => {
+        brushShape = e.target.value;
+      });
+
+      // Event listener for brush color selection
+      document.getElementById('brushColor').addEventListener('change', (e) => {
+        brushColor = e.target.value;
+      });
+
+       // Event listener for fill tool button
+      document.getElementById('fillTool').addEventListener('click', () => {
+        fillToolActive = !fillToolActive;
+      });
+
+      // Event listener for export image button
+      document.getElementById('exportImage').addEventListener('click', () => {
+        const dataUrl = canvas.toDataURL();
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'painting.png';
+        link.click();
+      });
+
+      // Event listeners for drawing on the canvas
+      canvas.addEventListener('mousedown', draw);
+      canvas.addEventListener('mousemove', draw);
+    </script>
+</body>
+</html>
