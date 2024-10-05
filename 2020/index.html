@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stupid Paint Websit</title>
+    <style>
+        /* Google Font */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+        
+        /* 2020s Style */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Roboto', sans-serif;
+            text-align: center;
+            margin-top: 20px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #212529;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            border-radius: 10px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button, select, input[type="color"] {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover, select:hover {
+            background-color: #0056b3;
+        }
+
+        input[type="color"] {
+            cursor: pointer;
+            padding: 5px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        a button {
+            background-color: #6c757d;
+        }
+
+        a button:hover {
+            background-color: #5a6268;
+        }
+
+        footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+
+            .toolbar {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="https://tdrbot.github.io/tdrp-tools">
+        <button>Go Back</button>
+    </a>
+    <h1>Stupid Paint Websit</h1>
+    
+    <div class="toolbar">
+        <button id="brushSizeSmall">Small Brush</button>
+        <button id="brushSizeMedium">Medium Brush</button>
+        <button id="brushSizeLarge">Large Brush</button>
+
+        <select id="brushShape">
+            <option value="round">Round Brush</option>
+            <option value="square">Square Brush</option>
+            <option value="triangle">Triangle Brush</option>
+        </select>
+
+        <input type="color" id="brushColor" value="#000000">
+
+        <button id="fillTool" style="display:none;">Fill Tool</button>
+        <button id="exportImage">Export Image</button>
+    </div>
+
+    <canvas id="paintCanvas" width="800" height="600"></canvas>
+
+    <footer>
+        &copy; 2024 | Created by TDRP
+    </footer>
+
+    <script>
+        // Get the canvas element and its context
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set initial brush size, shape, and color
+        let brushSize = 5;
+        let brushShape = 'round';
+        let brushColor = '#000000';
+
+        // Function to draw on the canvas
+        function draw(e) {
+            if (e.buttons !== 1) return;
+
+            ctx.beginPath();
+            ctx.fillStyle = brushColor;
+
+            if (brushShape === 'round') {
+                ctx.arc(e.offsetX, e.offsetY, brushSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (brushShape === 'square') {
+                ctx.fillRect(e.offsetX - brushSize / 2, e.offsetY - brushSize / 2, brushSize, brushSize);
+            } else if (brushShape === 'triangle') {
+                const height = Math.sqrt(3) * (brushSize / 2);
+                const halfBase = brushSize / 2;
+                ctx.moveTo(e.offsetX - halfBase, e.offsetY + height / 3);
+                ctx.lineTo(e.offsetX + halfBase, e.offsetY + height / 3);
+                ctx.lineTo(e.offsetX, e.offsetY - (height * 2) / 3);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // Event listeners for brush size buttons
+        document.getElementById('brushSizeSmall').addEventListener('click', () => {
+            brushSize = 5;
+        });
+
+        document.getElementById('brushSizeMedium').addEventListener('click', () => {
+            brushSize = 10;
+        });
+
+        document.getElementById('brushSizeLarge').addEventListener('click', () => {
+            brushSize = 15;
+        });
+
+        // Event listener for brush shape selection
+        document.getElementById('brushShape').addEventListener('change', (e) => {
+            brushShape = e.target.value;
+        });
+
+        // Event listener for brush color selection
+        document.getElementById('brushColor').addEventListener('change', (e) => {
+            brushColor = e.target.value;
+        });
+
+        // Event listeners for drawing on the canvas
+        canvas.addEventListener('mousedown', draw);
+        canvas.addEventListener('mousemove', draw);
+    </script>
+</body>
+</html>
